@@ -45,9 +45,9 @@ interface SingleCalendarProps {
   onChange: (newDate: Moment | null) => void;
   minDate: Moment;
   maxDate: Moment;
-  initialMonth: Moment; // Пропс для початкового місяця
-  startDate: Moment | null; // Початкова дата діапазону
-  endDate: Moment | null; // Кінцева дата діапазону
+  initialMonth: Moment;
+  startDate: Moment | null;
+  endDate: Moment | null;
 }
 
 const SingleCalendar: React.FC<SingleCalendarProps> = ({
@@ -72,8 +72,8 @@ const SingleCalendar: React.FC<SingleCalendarProps> = ({
         openTo="day"
         renderLoading={() => <DayCalendarSkeleton />}
         views={['year', 'day']}
-        onMonthChange={(date) => setViewDate(date)} // Оновлюємо стан місяця при зміні місяця
-        view={viewDate ? 'day' : undefined} // Встановлюємо вид на "день"
+        onMonthChange={(date) => setViewDate(date)}
+        view={viewDate ? 'day' : undefined}
         slots={{
           day: (props: PickersDayProps<Moment>) => {
             const { day } = props;
