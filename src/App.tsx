@@ -19,6 +19,9 @@ function App() {
         <Typography>Date Range Picker Controlled</Typography>
         <DateRangeInput value={selectedDates} onChange={setSelectedDates} />
 
+        <Typography>Date Range Picker uncontrolled</Typography>
+        <DateRangeInput defaultValue={[moment(), moment().add(7, "days")]} />
+
         <Typography>Date Range Picker with showPresetSelect</Typography>
         <DateRangeInput showPresetSelect />
 

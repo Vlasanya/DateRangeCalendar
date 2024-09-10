@@ -8,13 +8,14 @@ import {
   DialogContent,
 } from "@mui/material";
 import moment, { Moment } from "moment";
-import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
+import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
 import CustomDateRangeCalendar from "./customDateRangeCalendar";
 import PresetSelect from "./presetSelect";
 
 interface DateRangeInputProps {
   value?: [Moment | null, Moment | null];
   onChange?: (newRange: [Moment | null, Moment | null]) => void;
+  defaultValue?: [Moment | null, Moment | null];
   showPresetSelect?: boolean;
   disableFuture?: boolean;
   disablePast?: boolean;
@@ -23,15 +24,16 @@ interface DateRangeInputProps {
 const DateRangeInput: React.FC<DateRangeInputProps> = ({
   value,
   onChange,
+  defaultValue = [null, null],
   showPresetSelect,
   disableFuture = false,
   disablePast = false,
 }) => {
-  const isControlled = value !== undefined && onChange !== undefined;
+  const isControlled = value !== undefined;
 
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [selectedDates, setSelectedDates] = React.useState<[Moment | null, Moment | null]>(
-    isControlled ? [null, null] : value || [null, null]
+    isControlled ? [null, null] : defaultValue
   );
 
   const [tempSelectedDates, setTempSelectedDates] = React.useState<[Moment | null, Moment | null]>(
@@ -85,7 +87,7 @@ const DateRangeInput: React.FC<DateRangeInputProps> = ({
         InputProps={{
           readOnly: true,
           classes: {
-            notchedOutline: 'notchedOutline'
+            notchedOutline: "notchedOutline",
           },
           endAdornment: <CalendarTodayOutlinedIcon />,
         }}
@@ -110,8 +112,8 @@ const DateRangeInput: React.FC<DateRangeInputProps> = ({
         anchorEl={anchorEl}
         onClose={handleClose}
         anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'left',
+          vertical: "bottom",
+          horizontal: "left",
         }}
       >
         <DialogContent>
@@ -127,10 +129,10 @@ const DateRangeInput: React.FC<DateRangeInputProps> = ({
             />
 
             {showPresetSelect && (
-              <PresetSelect 
-                onPresetSelect={handlePresetSelect} 
+              <PresetSelect
+                onPresetSelect={handlePresetSelect}
                 selectedDate={tempSelectedDates[0] || null}
-                disableFuture={disableFuture} 
+                disableFuture={disableFuture}
               />
             )}
           </Box>
