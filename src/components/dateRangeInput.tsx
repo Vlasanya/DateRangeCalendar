@@ -3,47 +3,63 @@ import {
   Box,
   Button,
   TextField,
-  Dialog,
+  Popover,
   DialogActions,
   DialogContent,
 } from "@mui/material";
 import moment, { Moment } from "moment";
-import CustomDateRangeCalendar from "./dateRangeCalendar";
+import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
+import CustomDateRangeCalendar from "./customDateRangeCalendar";
 import PresetSelect from "./presetSelect";
 
 interface DateRangeInputProps {
+  value?: [Moment | null, Moment | null];
+  onChange?: (newRange: [Moment | null, Moment | null]) => void;
   showPresetSelect?: boolean;
   disableFuture?: boolean;
   disablePast?: boolean;
 }
 
 const DateRangeInput: React.FC<DateRangeInputProps> = ({
+  value,
+  onChange,
   showPresetSelect,
   disableFuture = false,
   disablePast = false,
 }) => {
-  const [open, setOpen] = React.useState(false);
-  const [selectedDates, setSelectedDates] = React.useState<[Moment | null, Moment | null]>([null, null]);
-  const [tempSelectedDates, setTempSelectedDates] = React.useState<[Moment | null, Moment | null]>([null, null]);
+  const isControlled = value !== undefined && onChange !== undefined;
 
-  const handleOpen = () => {
-    setTempSelectedDates(selectedDates);
-    setOpen(true);
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [selectedDates, setSelectedDates] = React.useState<[Moment | null, Moment | null]>(
+    isControlled ? [null, null] : value || [null, null]
+  );
+
+  const [tempSelectedDates, setTempSelectedDates] = React.useState<[Moment | null, Moment | null]>(
+    isControlled ? value || [null, null] : selectedDates
+  );
+
+  const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+    setTempSelectedDates(isControlled ? value || [null, null] : selectedDates);
   };
 
   const handleClose = () => {
-    setOpen(false);
+    setAnchorEl(null);
   };
 
   const handleApply = () => {
-    setSelectedDates(tempSelectedDates);
-    setOpen(false);
+    if (isControlled && onChange) {
+      onChange(tempSelectedDates);
+    } else {
+      setSelectedDates(tempSelectedDates);
+    }
+    setAnchorEl(null);
   };
 
   const handleCancel = () => {
     setTempSelectedDates([null, null]);
-    setSelectedDates([null, null]);
-    setOpen(false);
+    if (!isControlled) setSelectedDates([null, null]);
+    setAnchorEl(null);
   };
 
   const handleDateChange = (newRange: [Moment | null, Moment | null]) => {
@@ -55,8 +71,8 @@ const DateRangeInput: React.FC<DateRangeInputProps> = ({
   };
 
   const formattedDateRange =
-    selectedDates[0] && selectedDates[1]
-      ? `${selectedDates[0].format("DD MMM YYYY")} - ${selectedDates[1].format("DD MMM YYYY")}`
+    (isControlled ? value : selectedDates)[0] && (isControlled ? value : selectedDates)[1]
+      ? `${(isControlled ? value : selectedDates)[0]?.format("DD MMM YYYY")} - ${(isControlled ? value : selectedDates)[1]?.format("DD MMM YYYY")}`
       : "";
 
   const isApplyDisabled = !(tempSelectedDates[0] && tempSelectedDates[1]);
@@ -65,13 +81,39 @@ const DateRangeInput: React.FC<DateRangeInputProps> = ({
     <Box>
       <TextField
         value={formattedDateRange}
-        placeholder="Select date range"
         onClick={handleOpen}
-        InputProps={{ readOnly: true }}
-        sx={{ minWidth: 300 }}
+        InputProps={{
+          readOnly: true,
+          classes: {
+            notchedOutline: 'notchedOutline'
+          },
+          endAdornment: <CalendarTodayOutlinedIcon />,
+        }}
+        sx={{
+          minWidth: 300,
+          "& .MuiOutlinedInput-notchedOutline": {
+            border: "none",
+          },
+          "&:hover .MuiOutlinedInput-notchedOutline": {
+            border: "none",
+          },
+          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+            border: "none",
+          },
+          borderBottom: "1px solid",
+          borderRadius: 0,
+        }}
       />
 
-      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
+      <Popover
+        open={Boolean(anchorEl)}
+        anchorEl={anchorEl}
+        onClose={handleClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left',
+        }}
+      >
         <DialogContent>
           <Box display="flex">
             <CustomDateRangeCalendar
@@ -104,7 +146,7 @@ const DateRangeInput: React.FC<DateRangeInputProps> = ({
             Apply
           </Button>
         </DialogActions>
-      </Dialog>
+      </Popover>
     </Box>
   );
 };

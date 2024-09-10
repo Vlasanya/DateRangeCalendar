@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Box, Typography } from '@mui/material';
 import moment, { Moment } from 'moment';
-import PickersRangeCalendarHeader from './header';
+import PickersRangeCalendarHeader from './pickersRangeCalendarHeader';
 import DayCalendarForRange from './DayCalendarForRange';
 
 interface CustomDateRangeCalendarProps {
