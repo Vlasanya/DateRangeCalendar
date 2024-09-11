@@ -1,4 +1,4 @@
-import * as React from "react";
+import React, { useState, useCallback, useEffect, useRef, useImperativeHandle, forwardRef, useMemo } from "react";
 import {
   Box,
   Button,
@@ -21,75 +21,86 @@ interface DateRangeInputProps {
   disablePast?: boolean;
 }
 
-const DateRangeInput: React.FC<DateRangeInputProps> = ({
+const DateRangeInput = forwardRef<unknown, DateRangeInputProps>(({
   value,
   onChange,
   defaultValue = [null, null],
   showPresetSelect,
   disableFuture = false,
   disablePast = false,
-}) => {
-  const isControlled = value !== undefined;
-
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-  const [selectedDates, setSelectedDates] = React.useState<[Moment | null, Moment | null]>(
-    isControlled ? [null, null] : defaultValue
+}, ref) => {
+  const defaultRef = useRef(defaultValue);
+  const [selectedDates, setSelectedDates] = useState<[Moment | null, Moment | null]>(
+    defaultRef.current
+  );
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [tempSelectedDates, setTempSelectedDates] = useState<[Moment | null, Moment | null]>(
+    defaultRef.current
   );
 
-  const [tempSelectedDates, setTempSelectedDates] = React.useState<[Moment | null, Moment | null]>(
-    isControlled ? value || [null, null] : selectedDates
-  );
+  useEffect(() => {
+    if (value) {
+      setSelectedDates(value);
+    }
+  }, [value]);
 
-  const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
+  const handleOpen = useCallback((event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
-    setTempSelectedDates(isControlled ? value || [null, null] : selectedDates);
-  };
+    setTempSelectedDates(value || selectedDates);
+  }, [value, selectedDates]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setAnchorEl(null);
-  };
+  }, []);
 
-  const handleApply = () => {
-    if (isControlled && onChange) {
+  const handleApply = useCallback(() => {
+    if (onChange) {
       onChange(tempSelectedDates);
     } else {
       setSelectedDates(tempSelectedDates);
     }
     setAnchorEl(null);
-  };
+  }, [onChange, tempSelectedDates]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setTempSelectedDates([null, null]);
-    if (!isControlled) setSelectedDates([null, null]);
+    setSelectedDates([null, null]);
     setAnchorEl(null);
-  };
+  }, []);
 
-  const handleDateChange = (newRange: [Moment | null, Moment | null]) => {
+  const handleDateChange = useCallback((newRange: [Moment | null, Moment | null]) => {
     setTempSelectedDates(newRange);
-  };
+  }, []);
 
-  const handlePresetSelect = (preset: [Moment | null, Moment | null]) => {
+  const handlePresetSelect = useCallback((preset: [Moment | null, Moment | null]) => {
     setTempSelectedDates(preset);
-  };
-
-  const formattedDateRange =
-    (isControlled ? value : selectedDates)[0] && (isControlled ? value : selectedDates)[1]
-      ? `${(isControlled ? value : selectedDates)[0]?.format("DD MMM YYYY")} - ${(isControlled ? value : selectedDates)[1]?.format("DD MMM YYYY")}`
-      : "";
+  }, []);
 
   const isApplyDisabled = !(tempSelectedDates[0] && tempSelectedDates[1]);
+
+  useImperativeHandle(ref, () => ({
+    getSelectedDates: () => selectedDates,
+  }));
+
+  const formattedDateRange = useMemo(() => {
+    return selectedDates[0] && selectedDates[1]
+      ? `${selectedDates[0]?.format("DD MMM YYYY")} - ${selectedDates[1]?.format("DD MMM YYYY")}`
+      : "";
+  }, [selectedDates]);
 
   return (
     <Box>
       <TextField
         value={formattedDateRange}
         onClick={handleOpen}
-        InputProps={{
-          readOnly: true,
-          classes: {
-            notchedOutline: "notchedOutline",
+        slotProps={{
+          input: {
+            readOnly: true,
+            classes: {
+              notchedOutline: "notchedOutline",
+            },
+            endAdornment: <CalendarTodayOutlinedIcon />,
           },
-          endAdornment: <CalendarTodayOutlinedIcon />,
         }}
         sx={{
           minWidth: 300,
@@ -151,6 +162,6 @@ const DateRangeInput: React.FC<DateRangeInputProps> = ({
       </Popover>
     </Box>
   );
-};
+});
 
-export default DateRangeInput;
+export default React.memo(DateRangeInput);

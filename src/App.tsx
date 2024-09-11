@@ -1,14 +1,22 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterMoment } from "@mui/x-date-pickers/AdapterMoment";
 import DateRangeInput from "./components/dateRangeInput";
-import { Typography } from "@mui/material";
+import { Typography, Button } from "@mui/material";
 import moment, { Moment } from "moment";
 
-function App() {
+const App: React.FC = React.memo(() => {
   const [selectedDates, setSelectedDates] = useState<
     [Moment | null, Moment | null]
   >([moment(), moment().add(7, "days")]);
+
+   const dateRangeRef = useRef<{ getSelectedDates: () => [Moment | null, Moment | null] } | null>(null);
+   const handleGetSelectedDates = () => {
+     if (dateRangeRef.current) {
+       const dates = dateRangeRef.current.getSelectedDates();
+       console.log("Selected Dates from DateRangeInput:", dates);
+     }
+   };
 
   return (
     <LocalizationProvider dateAdapter={AdapterMoment}>
@@ -35,8 +43,16 @@ function App() {
         </Typography>
         <DateRangeInput showPresetSelect disableFuture />
       </div>
+      <div>
+        <Typography>Date Range Picker Controlled with Ref</Typography>
+        <DateRangeInput ref={dateRangeRef} value={selectedDates} onChange={setSelectedDates} />
+        <br />
+        <Button variant="contained" color="primary" onClick={handleGetSelectedDates}>
+          Get Selected Dates
+        </Button>
+      </div>
     </LocalizationProvider>
   );
-}
+});
 
 export default App;

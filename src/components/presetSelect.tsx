@@ -1,4 +1,4 @@
-import * as React from "react";
+import React, { useCallback } from "react";
 import { Box, Button, Typography } from "@mui/material";
 import moment, { Moment } from "moment";
 
@@ -8,12 +8,12 @@ interface PresetSelectProps {
   disableFuture?: boolean;
 }
 
-const PresetSelect: React.FC<PresetSelectProps> = ({
+const PresetSelect: React.FC<PresetSelectProps> = React.memo(({
   onPresetSelect,
   selectedDate,
   disableFuture = false,
 }) => {
-  const handlePresetSelect = (preset: string) => {
+  const handlePresetSelect = useCallback((preset: string) => {
     const baseDate = selectedDate ? selectedDate.clone() : moment();
     let start: Moment | null = null;
     let end: Moment | null = baseDate.clone();
@@ -71,7 +71,7 @@ const PresetSelect: React.FC<PresetSelectProps> = ({
     }
 
     onPresetSelect([start, end]);
-  };
+  }, [selectedDate, disableFuture, onPresetSelect]);
 
   return (
     <Box display="flex" flexDirection="column" alignItems="center">
@@ -85,6 +85,6 @@ const PresetSelect: React.FC<PresetSelectProps> = ({
       <Button onClick={() => handlePresetSelect("One Year")}>One Year</Button>
     </Box>
   );
-};
+});
 
 export default PresetSelect;
