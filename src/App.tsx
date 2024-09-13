@@ -6,9 +6,10 @@ import { Typography, Button } from "@mui/material";
 import moment, { Moment } from "moment";
 
 const App: React.FC = React.memo(() => {
-  const [selectedDates, setSelectedDates] = useState<
-    [Moment | null, Moment | null]
-  >([moment(), moment().add(7, "days")]);
+  const [selectedDates, setSelectedDates] = useState<[Moment | null, Moment | null]>([
+    moment(),
+    moment().add(7, "days"),
+  ]);
 
   const dateRangeRef = useRef<{
     getSelectedDates: () => [Moment | null, Moment | null];
@@ -20,6 +21,51 @@ const App: React.FC = React.memo(() => {
       console.log("Selected Dates from DateRangeInput:", dates);
     }
   };
+
+  const shortcutItems = [
+    {
+      label: "Today",
+      getValue: (): [Moment | null, Moment | null] => {
+        const today = moment();
+        return [today, today];
+      },
+    },
+    {
+      label: "One Day",
+      getValue: (): [Moment | null, Moment | null] => {
+        const today = moment();
+        return [today, today.clone().add(1, "day")];
+      },
+    },
+    {
+      label: "One Week",
+      getValue: (): [Moment | null, Moment | null] => {
+        const today = moment();
+        return [today, today.clone().add(7, "days")];
+      },
+    },
+    {
+      label: "One Month",
+      getValue: (): [Moment | null, Moment | null] => {
+        const today = moment();
+        return [today, today.clone().add(1, "month")];
+      },
+    },
+    {
+      label: "One Year",
+      getValue: (): [Moment | null, Moment | null] => {
+        const today = moment();
+        return [today, today.clone().add(1, "year")];
+      },
+    },
+    {
+      label: "Current Month",
+      getValue: (): [Moment | null, Moment | null] => {
+        const today = moment();
+        return [today.startOf("month"), today.endOf("month")];
+      },
+    },
+  ];
 
   return (
     <LocalizationProvider dateAdapter={AdapterMoment}>
@@ -34,56 +80,23 @@ const App: React.FC = React.memo(() => {
         <DateRangeInput defaultValue={[moment(), moment().add(7, "days")]} />
 
         <Typography>Date Range Picker with showPresetSelect</Typography>
-        <DateRangeInput
-          showPresetSelect
-          shortcutsItems={[
-            "One Week",
-            "One Month",
-            "Current Month",
-            "Today",
-            "One Year",
-            "One Day",
-          ]}
-        />
+        <DateRangeInput showPresetSelect shortcutsItems={shortcutItems} />
 
         <Typography>
           Date Range Picker with disablePast and showPresetSelect
         </Typography>
-        <DateRangeInput
-          showPresetSelect
-          disablePast
-          shortcutsItems={[
-            "One Week",
-            "One Month",
-            "Current Month",
-            "Today",
-            "One Year",
-            "One Day",
-          ]}
-        />
+        <DateRangeInput showPresetSelect disablePast shortcutsItems={shortcutItems} />
 
         <Typography>
           Date Range Picker with disableFuture and showPresetSelect
         </Typography>
-        <DateRangeInput
-          showPresetSelect
-          shortcutsItems={["One Week", "Current Month", "One Month"]}
-          disableFuture
-        />
+        <DateRangeInput showPresetSelect shortcutsItems={shortcutItems} disableFuture />
       </div>
       <div>
         <Typography>Date Range Picker Controlled with Ref</Typography>
-        <DateRangeInput
-          ref={dateRangeRef}
-          value={selectedDates}
-          onChange={setSelectedDates}
-        />
+        <DateRangeInput ref={dateRangeRef} value={selectedDates} onChange={setSelectedDates} />
         <br />
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleGetSelectedDates}
-        >
+        <Button variant="contained" color="primary" onClick={handleGetSelectedDates}>
           Get Selected Dates
         </Button>
       </div>

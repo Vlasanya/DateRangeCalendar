@@ -1,17 +1,17 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
-import App from './App';
+import MainApp from './MainApp'; // Імпортуємо ваш компонент MainApp
 import reportWebVitals from './reportWebVitals';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <App />
+    <MainApp /> {/* Використовуємо MainApp замість App */}
   </React.StrictMode>
 );
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
+// Якщо ви хочете розпочати вимірювання продуктивності у вашій програмі, передайте функцію
+// для запису результатів (наприклад: reportWebVitals(console.log))
+// або надішліть на аналітичну кінцеву точку. Детальніше: https://bit.ly/CRA-vitals
 reportWebVitals();

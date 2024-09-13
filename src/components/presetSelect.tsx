@@ -4,8 +4,7 @@ import moment, { Moment } from "moment";
 
 interface ShortcutsItem {
   label: string;
-  adjustDays?: number;
-  adjustMonths?: number;
+  getValue: () => [Moment | null, Moment | null];
 }
 
 interface ShortcutsItemsSelectProps {
@@ -15,68 +14,70 @@ interface ShortcutsItemsSelectProps {
   shortcutsItems: ShortcutsItem[];
 }
 
-const ShortcutsItemsSelect: React.FC<ShortcutsItemsSelectProps> = React.memo(({
-  onPresetSelect,
-  disableFuture = false,
-  disablePast = false,
-  shortcutsItems,
-}) => {
+const ShortcutsItemsSelect: React.FC<ShortcutsItemsSelectProps> = React.memo(
+  ({ onPresetSelect, disableFuture = false, disablePast = false, shortcutsItems }) => {
+    const handleShortcutSelect = useCallback(
+      (item: ShortcutsItem) => {
+        let [start, end] = item.getValue();
+        const today = moment();
 
-  const handleShortcutSelect = useCallback((item: ShortcutsItem) => {
-    const today = moment();
-    let start: Moment | null = today.clone();
-    let end: Moment | null = today.clone();
+        if (!start || !end) {
+          return;
+        }
 
-    if (item.label === "Current Month") {
-      start = today.clone().startOf("month");
-      end = today.clone().endOf("month");
+        if (item.label === "Current Month") {
+          start = today.clone().startOf("month");
+          end = today.clone().endOf("month");
 
-      if (disablePast && start.isBefore(today, "day")) {
-        start = today.clone();
-      }
+          if (disableFuture && !disablePast) {
+            end = today.clone();
+          } else if (disablePast && !disableFuture) {
+            start = today.clone();
+          } else if (disablePast && disableFuture) {
+            start = today.clone();
+            end = today.clone();
+          }
+        } else {
+          const [defaultStart, defaultEnd] = item.getValue();
 
-      if (disableFuture && end.isAfter(today, "day")) {
-        end = today.clone();
-      }
+          if (defaultStart && defaultEnd) {
+            if (disableFuture) {
+              end = today.clone();
+              const duration = moment.duration(defaultEnd.diff(defaultStart));
+              start = end.clone().subtract(duration);
+            } else if (disablePast) {
+              start = today.clone();
+              const duration = moment.duration(defaultEnd.diff(defaultStart));
+              end = start.clone().add(duration);
+            } else {
+              [start, end] = [defaultStart, defaultEnd];
+            }
+          }
+        }
 
-      if (disablePast && disableFuture) {
-        start = today.clone();
-        end = today.clone();
-      }
-    } else if (item.adjustDays !== undefined) {
-      if (disableFuture) {
-        start = today.clone().subtract(item.adjustDays, 'days');
-        end = today.clone();
-      } else if (disablePast) {
-        start = today.clone();
-        end = today.clone().add(item.adjustDays, 'days');
-      } else {
-        end = today.clone().add(item.adjustDays, 'days');
-      }
-    } else if (item.adjustMonths !== undefined) {
-      if (disableFuture) {
-        start = today.clone().subtract(item.adjustMonths, 'months');
-        end = today.clone();
-      } else if (disablePast) {
-        start = today.clone();
-        end = today.clone().add(item.adjustMonths, 'months');
-      } else {
-        end = today.clone().add(item.adjustMonths, 'months');
-      }
-    }
+        onPresetSelect([start, end]);
+      },
+      [onPresetSelect, disableFuture, disablePast]
+    );
 
-    onPresetSelect([start, end]);
-  }, [disableFuture, disablePast, onPresetSelect]);
+    const handleReset = useCallback(() => {
+      const today = moment();
+      onPresetSelect([today, today]);
+    }, [onPresetSelect]);
 
-  return (
-    <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center">
-      {shortcutsItems.map((item) => (
-        <Button key={item.label} onClick={() => handleShortcutSelect(item)}>
-          {item.label}
+    return (
+      <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center">
+        {shortcutsItems.map((item) => (
+          <Button key={item.label} onClick={() => handleShortcutSelect(item)}>
+            {item.label}
+          </Button>
+        ))}
+        <Button key="Reset" onClick={handleReset} color="secondary">
+          Reset
         </Button>
-      ))}
-    </Box>
-  );
-});
+      </Box>
+    );
+  }
+);
 
 export default ShortcutsItemsSelect;

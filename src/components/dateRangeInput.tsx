@@ -6,6 +6,7 @@ import {
   Popover,
   DialogActions,
   DialogContent,
+  useTheme,
 } from "@mui/material";
 import moment, { Moment } from "moment";
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
@@ -14,8 +15,7 @@ import ShortcutsItemsSelect from "./presetSelect";
 
 interface ShortcutsItem {
   label: string;
-  adjustDays?: number;
-  adjustMonths?: number;
+  getValue: () => [Moment | null, Moment | null];
 }
 
 interface DateRangeInputProps {
@@ -25,18 +25,9 @@ interface DateRangeInputProps {
   showPresetSelect?: boolean;
   disableFuture?: boolean;
   disablePast?: boolean;
-  shortcutsItems?: string[];
+  shortcutsItems?: ShortcutsItem[];
   dateFormat?: string;
 }
-
-const SHORTCUTS_MAP: Record<string, ShortcutsItem> = {
-  "Today": { label: "Today", adjustDays: 0 },
-  "One Day": { label: "One Day", adjustDays: 1 },
-  "One Week": { label: "One Week", adjustDays: 7 },
-  "One Month": { label: "One Month", adjustMonths: 1 },
-  "One Year": { label: "One Year", adjustMonths: 12 },
-  "Current Month": { label: "Current Month" }
-};
 
 const DateRangeInput = forwardRef<unknown, DateRangeInputProps>(({
   value,
@@ -48,6 +39,7 @@ const DateRangeInput = forwardRef<unknown, DateRangeInputProps>(({
   shortcutsItems = [],
   dateFormat = "MM/DD/YYYY",
 }, ref) => {
+  const theme = useTheme();
   const defaultRef = useRef(defaultValue);
   const [selectedDates, setSelectedDates] = useState<[Moment | null, Moment | null]>(
     defaultRef.current
@@ -125,8 +117,6 @@ const DateRangeInput = forwardRef<unknown, DateRangeInputProps>(({
       : "";
   }, [selectedDates, dateFormat]);
 
-  const filteredShortcuts = shortcutsItems.map((name) => SHORTCUTS_MAP[name]).filter(Boolean);
-
   return (
     <Box>
       <TextField
@@ -152,7 +142,7 @@ const DateRangeInput = forwardRef<unknown, DateRangeInputProps>(({
           "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
             border: "none",
           },
-          borderBottom: "1px solid",
+          borderBottom: `1px solid ${theme.palette.divider}`,
           borderRadius: 0,
         }}
       />
@@ -183,14 +173,17 @@ const DateRangeInput = forwardRef<unknown, DateRangeInputProps>(({
             {showPresetSelect && (
               <ShortcutsItemsSelect
                 onPresetSelect={handleShortcutSelect}
-                shortcutsItems={filteredShortcuts}
+                shortcutsItems={shortcutsItems}
                 disableFuture={disableFuture}
+                disablePast={disablePast}
               />
             )}
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCancel}>Cancel</Button>
+          <Button onClick={handleCancel} color="secondary">
+            Cancel
+          </Button>
           <Button
             onClick={handleApply}
             color="primary"
