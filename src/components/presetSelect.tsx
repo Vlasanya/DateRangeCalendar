@@ -1,90 +1,82 @@
 import React, { useCallback } from "react";
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Button } from "@mui/material";
 import moment, { Moment } from "moment";
 
-interface PresetSelectProps {
-  onPresetSelect: (preset: [Moment | null, Moment | null]) => void;
-  selectedDate: Moment | null;
-  disableFuture?: boolean;
+interface ShortcutsItem {
+  label: string;
+  adjustDays?: number;
+  adjustMonths?: number;
 }
 
-const PresetSelect: React.FC<PresetSelectProps> = React.memo(({
-  onPresetSelect,
-  selectedDate,
-  disableFuture = false,
-}) => {
-  const handlePresetSelect = useCallback((preset: string) => {
-    const baseDate = selectedDate ? selectedDate.clone() : moment();
-    let start: Moment | null = null;
-    let end: Moment | null = baseDate.clone();
+interface ShortcutsItemsSelectProps {
+  onPresetSelect: (preset: [Moment | null, Moment | null]) => void;
+  disableFuture?: boolean;
+  disablePast?: boolean;
+  shortcutsItems: ShortcutsItem[];
+}
 
-    if (disableFuture) {
-      switch (preset) {
-        case "Today":
-          start = baseDate.clone();
-          end = baseDate.clone();
-          break;
-        case "One Day":
-          start = baseDate.clone();
-          end = baseDate.clone();
-          break;
-        case "One Week":
-          start = baseDate.clone().subtract(1, "week");
-          end = baseDate.clone();
-          break;
-        case "One Month":
-          start = baseDate.clone().subtract(1, "month");
-          end = baseDate.clone();
-          break;
-        case "One Year":
-          start = baseDate.clone().subtract(1, "year");
-          end = baseDate.clone();
-          break;
-        default:
-          break;
+const ShortcutsItemsSelect: React.FC<ShortcutsItemsSelectProps> = React.memo(({
+  onPresetSelect,
+  disableFuture = false,
+  disablePast = false,
+  shortcutsItems,
+}) => {
+
+  const handleShortcutSelect = useCallback((item: ShortcutsItem) => {
+    const today = moment();
+    let start: Moment | null = today.clone();
+    let end: Moment | null = today.clone();
+
+    if (item.label === "Current Month") {
+      start = today.clone().startOf("month");
+      end = today.clone().endOf("month");
+
+      if (disablePast && start.isBefore(today, "day")) {
+        start = today.clone();
       }
-    } else {
-      switch (preset) {
-        case "Today":
-          start = baseDate.clone();
-          end = baseDate.clone();
-          break;
-        case "One Day":
-          start = baseDate.clone();
-          end = baseDate.clone();
-          break;
-        case "One Week":
-          start = baseDate.clone();
-          end = baseDate.clone().add(1, "week");
-          break;
-        case "One Month":
-          start = baseDate.clone();
-          end = baseDate.clone().add(1, "month");
-          break;
-        case "One Year":
-          start = baseDate.clone();
-          end = baseDate.clone().add(1, "year");
-          break;
-        default:
-          break;
+
+      if (disableFuture && end.isAfter(today, "day")) {
+        end = today.clone();
+      }
+
+      if (disablePast && disableFuture) {
+        start = today.clone();
+        end = today.clone();
+      }
+    } else if (item.adjustDays !== undefined) {
+      if (disableFuture) {
+        start = today.clone().subtract(item.adjustDays, 'days');
+        end = today.clone();
+      } else if (disablePast) {
+        start = today.clone();
+        end = today.clone().add(item.adjustDays, 'days');
+      } else {
+        end = today.clone().add(item.adjustDays, 'days');
+      }
+    } else if (item.adjustMonths !== undefined) {
+      if (disableFuture) {
+        start = today.clone().subtract(item.adjustMonths, 'months');
+        end = today.clone();
+      } else if (disablePast) {
+        start = today.clone();
+        end = today.clone().add(item.adjustMonths, 'months');
+      } else {
+        end = today.clone().add(item.adjustMonths, 'months');
       }
     }
 
     onPresetSelect([start, end]);
-  }, [selectedDate, disableFuture, onPresetSelect]);
+  }, [disableFuture, disablePast, onPresetSelect]);
 
   return (
-    <Box display="flex" flexDirection="column" alignItems="center">
-      <Typography variant="subtitle1" gutterBottom>
-        Select Preset
-      </Typography>
-      <Button onClick={() => handlePresetSelect("Today")}>Today</Button>
-      <Button onClick={() => handlePresetSelect("One Day")}>One Day</Button>
-      <Button onClick={() => handlePresetSelect("One Week")}>One Week</Button>
-      <Button onClick={() => handlePresetSelect("One Month")}>One Month</Button>
-      <Button onClick={() => handlePresetSelect("One Year")}>One Year</Button>
+    <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center">
+      {shortcutsItems.map((item) => (
+        <Button key={item.label} onClick={() => handleShortcutSelect(item)}>
+          {item.label}
+        </Button>
+      ))}
     </Box>
   );
 });
 
-export default PresetSelect;
+export default ShortcutsItemsSelect;

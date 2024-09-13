@@ -10,7 +10,13 @@ import {
 import moment, { Moment } from "moment";
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
 import CustomDateRangeCalendar from "./customDateRangeCalendar";
-import PresetSelect from "./presetSelect";
+import ShortcutsItemsSelect from "./presetSelect";
+
+interface ShortcutsItem {
+  label: string;
+  adjustDays?: number;
+  adjustMonths?: number;
+}
 
 interface DateRangeInputProps {
   value?: [Moment | null, Moment | null];
@@ -19,7 +25,18 @@ interface DateRangeInputProps {
   showPresetSelect?: boolean;
   disableFuture?: boolean;
   disablePast?: boolean;
+  shortcutsItems?: string[];
+  dateFormat?: string;
 }
+
+const SHORTCUTS_MAP: Record<string, ShortcutsItem> = {
+  "Today": { label: "Today", adjustDays: 0 },
+  "One Day": { label: "One Day", adjustDays: 1 },
+  "One Week": { label: "One Week", adjustDays: 7 },
+  "One Month": { label: "One Month", adjustMonths: 1 },
+  "One Year": { label: "One Year", adjustMonths: 12 },
+  "Current Month": { label: "Current Month" }
+};
 
 const DateRangeInput = forwardRef<unknown, DateRangeInputProps>(({
   value,
@@ -28,6 +45,8 @@ const DateRangeInput = forwardRef<unknown, DateRangeInputProps>(({
   showPresetSelect,
   disableFuture = false,
   disablePast = false,
+  shortcutsItems = [],
+  dateFormat = "MM/DD/YYYY",
 }, ref) => {
   const defaultRef = useRef(defaultValue);
   const [selectedDates, setSelectedDates] = useState<[Moment | null, Moment | null]>(
@@ -37,6 +56,16 @@ const DateRangeInput = forwardRef<unknown, DateRangeInputProps>(({
   const [tempSelectedDates, setTempSelectedDates] = useState<[Moment | null, Moment | null]>(
     defaultRef.current
   );
+
+  const initialCalendarMonths = useMemo<[Moment, Moment]>(() => {
+    const today = moment();
+    if (disableFuture) {
+      return [today.clone().subtract(1, 'month'), today];
+    }
+    return [today, today.clone().add(1, 'month')];
+  }, [disableFuture]);
+
+  const [currentMonths, setCurrentMonths] = useState<[Moment, Moment]>(initialCalendarMonths);
 
   useEffect(() => {
     if (value) {
@@ -72,8 +101,16 @@ const DateRangeInput = forwardRef<unknown, DateRangeInputProps>(({
     setTempSelectedDates(newRange);
   }, []);
 
-  const handlePresetSelect = useCallback((preset: [Moment | null, Moment | null]) => {
+  const handleShortcutSelect = useCallback((preset: [Moment | null, Moment | null]) => {
     setTempSelectedDates(preset);
+  }, []);
+
+  const handleMonthChange = useCallback((index: number, newMonth: Moment) => {
+    setCurrentMonths((prevMonths) => {
+      const updatedMonths: [Moment, Moment] = [...prevMonths] as [Moment, Moment];
+      updatedMonths[index] = newMonth;
+      return updatedMonths;
+    });
   }, []);
 
   const isApplyDisabled = !(tempSelectedDates[0] && tempSelectedDates[1]);
@@ -84,9 +121,11 @@ const DateRangeInput = forwardRef<unknown, DateRangeInputProps>(({
 
   const formattedDateRange = useMemo(() => {
     return selectedDates[0] && selectedDates[1]
-      ? `${selectedDates[0]?.format("DD MMM YYYY")} - ${selectedDates[1]?.format("DD MMM YYYY")}`
+      ? `${selectedDates[0]?.format(dateFormat)} - ${selectedDates[1]?.format(dateFormat)}`
       : "";
-  }, [selectedDates]);
+  }, [selectedDates, dateFormat]);
+
+  const filteredShortcuts = shortcutsItems.map((name) => SHORTCUTS_MAP[name]).filter(Boolean);
 
   return (
     <Box>
@@ -137,12 +176,14 @@ const DateRangeInput = forwardRef<unknown, DateRangeInputProps>(({
               maxDate={moment().add(1, "year")}
               disableFuture={disableFuture}
               disablePast={disablePast}
+              currentMonths={currentMonths}
+              onMonthChange={handleMonthChange}
             />
 
             {showPresetSelect && (
-              <PresetSelect
-                onPresetSelect={handlePresetSelect}
-                selectedDate={tempSelectedDates[0] || null}
+              <ShortcutsItemsSelect
+                onPresetSelect={handleShortcutSelect}
+                shortcutsItems={filteredShortcuts}
                 disableFuture={disableFuture}
               />
             )}

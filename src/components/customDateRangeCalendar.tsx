@@ -1,8 +1,9 @@
-import * as React from 'react';
-import { Box, Typography } from '@mui/material';
-import moment, { Moment } from 'moment';
-import PickersRangeCalendarHeader from './pickersRangeCalendarHeader';
-import DayCalendarForRange from './DayCalendarForRange';
+import * as React from "react";
+import { Box, Typography } from "@mui/material";
+import moment, { Moment } from "moment";
+import PickersRangeCalendarHeader from "./pickersRangeCalendarHeader";
+import DayCalendarForRange from "./DayCalendarForRange";
+import ArrowRightAltIcon from "@mui/icons-material/ArrowRightAlt";
 
 interface CustomDateRangeCalendarProps {
   value: [Moment | null, Moment | null];
@@ -12,6 +13,8 @@ interface CustomDateRangeCalendarProps {
   maxDate: Moment;
   disableFuture?: boolean;
   disablePast?: boolean;
+  currentMonths: [Moment, Moment];
+  onMonthChange: (index: number, newMonth: Moment) => void;
 }
 
 const CustomDateRangeCalendar: React.FC<CustomDateRangeCalendarProps> = ({
@@ -22,51 +25,47 @@ const CustomDateRangeCalendar: React.FC<CustomDateRangeCalendarProps> = ({
   maxDate,
   disableFuture = false,
   disablePast = false,
+  currentMonths,
+  onMonthChange,
 }) => {
-  const [currentMonths, setCurrentMonths] = React.useState<Moment[]>(
-    Array.from({ length: calendars }, (_, index) => 
-      index === 0 ? moment().startOf('month').subtract(1, 'month') : moment().startOf('month')
-    )
-  );
-
   const selectedDaysCount = React.useMemo(() => {
     const [start, end] = value;
     if (start && end) {
-      return end.diff(start, 'days') + 1;
+      return end.diff(start, "days") + 1;
     }
     return 0;
   }, [value]);
 
-  const handleDaySelect = React.useCallback((selectedDay: Moment) => {
-    const [start, end] = value;
-    if (!start || (start && end)) {
-      onChange([selectedDay, null]);
-    } else if (selectedDay.isBefore(start)) {
-      onChange([selectedDay, end]);
-    } else {
-      onChange([start, selectedDay]);
-    }
-  }, [value, onChange]);
-
-  const handleMonthChange = React.useCallback((index: number, newMonth: Moment) => {
-    setCurrentMonths((prevMonths) => {
-      const updatedMonths = [...prevMonths];
-      updatedMonths[index] = newMonth;
-      return updatedMonths;
-    });
-  }, []);
+  const handleDaySelect = React.useCallback(
+    (selectedDay: Moment) => {
+      const [start, end] = value;
+      if (!start || (start && end)) {
+        onChange([selectedDay, null]);
+      } else if (selectedDay.isBefore(start)) {
+        onChange([selectedDay, end]);
+      } else {
+        onChange([start, selectedDay]);
+      }
+    },
+    [value, onChange]
+  );
 
   const renderCalendars = () => {
-    const today = moment().startOf('month');
+    const today = moment().startOf("month");
+
     return currentMonths.map((month, i) => (
       <Box key={i} mx={1}>
         <PickersRangeCalendarHeader
           month={month}
-          onMonthChange={(newMonth) => handleMonthChange(i, newMonth)}
-          isNextMonthDisabled={disableFuture && month.isSameOrAfter(today, 'month')}
-          isPreviousMonthDisabled={disablePast && month.isSameOrBefore(today, 'month')}
+          onMonthChange={(newMonth) => onMonthChange(i, newMonth)}
+          isNextMonthDisabled={
+            disableFuture && month.isSameOrAfter(today, "month")
+          }
+          isPreviousMonthDisabled={
+            disablePast && month.isSameOrBefore(today, "month")
+          }
           selectedDate={value[i]}
-          label={i === 0 ? 'Start Date' : 'End Date'}
+          label={i === 0 ? "Start Date" : "End Date"}
         />
         <DayCalendarForRange
           currentMonth={month}
@@ -82,10 +81,19 @@ const CustomDateRangeCalendar: React.FC<CustomDateRangeCalendarProps> = ({
 
   return (
     <Box display="flex" flexDirection="column" alignItems="center">
-      <Box mb={2} p={1} border={1} borderRadius={1}>
-        <Typography variant="subtitle1">
-          Selected Days: {selectedDaysCount}
-        </Typography>
+      <Box
+        mb={2}
+        p={1}
+        border={"none"}
+        textAlign="center"
+        sx={{ position: "absolute", top: 30, m: 0, opacity: 0.5 }}
+      >
+        <ArrowRightAltIcon />
+        {selectedDaysCount > 0 && (
+          <Typography variant="subtitle1" ml={1}>
+            {selectedDaysCount} days
+          </Typography>
+        )}
       </Box>
       <Box display="flex">{renderCalendars()}</Box>
     </Box>

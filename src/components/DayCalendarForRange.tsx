@@ -1,7 +1,7 @@
-import * as React from 'react';
-import { Box } from '@mui/material';
-import { PickersDay, PickersDayProps } from '@mui/x-date-pickers';
-import moment, { Moment } from 'moment';
+import * as React from "react";
+import { Box } from "@mui/material";
+import { PickersDay, PickersDayProps } from "@mui/x-date-pickers";
+import moment, { Moment } from "moment";
 
 interface DayCalendarForRangeProps {
   currentMonth: Moment;
@@ -24,14 +24,16 @@ const DayCalendarForRange: React.FC<DayCalendarForRangeProps> = ({
   const endDate = value[1];
   const today = moment();
 
-  const firstDayOfMonth = currentMonth.clone().startOf('month');
-  const firstDayWeekday = (firstDayOfMonth.day() + 6) % 7; 
+  const firstDayOfMonth = currentMonth.clone().startOf("month");
+  const firstDayWeekday = (firstDayOfMonth.day() + 6) % 7;
 
   const daysInMonth = currentMonth.daysInMonth();
 
   const daysArray: Moment[] = [];
   for (let i = 0; i < firstDayWeekday; i++) {
-    daysArray.push(firstDayOfMonth.clone().subtract(firstDayWeekday - i, 'day'));
+    daysArray.push(
+      firstDayOfMonth.clone().subtract(firstDayWeekday - i, "day")
+    );
   }
   for (let i = 1; i <= daysInMonth; i++) {
     daysArray.push(currentMonth.clone().date(i));
@@ -39,37 +41,83 @@ const DayCalendarForRange: React.FC<DayCalendarForRangeProps> = ({
 
   return (
     <Box display="grid" gridTemplateColumns="repeat(7, 1fr)">
-      {daysArray.map((day) => (
-        <PickersDay
-          key={day.toString()}
-          day={day}
-          outsideCurrentMonth={day.month() !== currentMonth.month()}
-          isFirstVisibleCell={false}
-          isLastVisibleCell={false}
-          disabled={
-            (disableFuture && day.isAfter(today, 'day')) ||
-            (disablePast && day.isBefore(today, 'day')) ||
-            day.isAfter(maxDate, 'day')
-          }
-          selected={
-            (!!(startDate && day.isSame(startDate, 'day')) || !!(endDate && day.isSame(endDate, 'day'))) || false
-          }
-          onDaySelect={() => 
-            !day.isAfter(maxDate, 'day') &&
-            !(disableFuture && day.isAfter(today, 'day')) &&
-            !(disablePast && day.isBefore(today, 'day')) &&
-            onDaySelect(day)
-          }
-          sx={{
-            ...(startDate &&
-              endDate &&
-              day.isBetween(startDate, endDate, 'day') && { backgroundColor: '#9fa8da', color: '#000' }),
-            ...(startDate && day.isSame(startDate, 'day') && { backgroundColor: '#3f51b5', color: '#fff' }),
-            ...(endDate && day.isSame(endDate, 'day') && { backgroundColor: '#3f51b5', color: '#fff' }),
-            ...(day.isSame(today, 'day') && { border: '1px solid #3f51b5' }),
-          }}
-        />
-      ))}
+      {daysArray.map((day) => {
+        const isBetween =
+          startDate && endDate && day.isBetween(startDate, endDate, "day");
+        const isToday = day.isSame(today, "day");
+        const className = `${isBetween ? "day-between" : ""} ${
+          isToday ? "today-day" : ""
+        }`.trim();
+
+        return (
+          <PickersDay
+            key={day.toString()}
+            day={day}
+            outsideCurrentMonth={day.month() !== currentMonth.month()}
+            isFirstVisibleCell={false}
+            isLastVisibleCell={false}
+            disabled={
+              (disableFuture && day.isAfter(today, "day")) ||
+              (disablePast && day.isBefore(today, "day")) ||
+              day.isAfter(maxDate, "day")
+            }
+            selected={
+              !!(startDate && day.isSame(startDate, "day")) ||
+              !!(endDate && day.isSame(endDate, "day")) ||
+              false
+            }
+            onDaySelect={() =>
+              !day.isAfter(maxDate, "day") &&
+              !(disableFuture && day.isAfter(today, "day")) &&
+              !(disablePast && day.isBefore(today, "day")) &&
+              onDaySelect(day)
+            }
+            className={className || undefined}
+            sx={{
+              "&.day-between": {
+                backgroundColor: "#dfe0e7",
+                color: "#000",
+                borderRadius: 0,
+                width: "100%",
+                position: "relative",
+              },
+              "&.today-day": {
+                border: "none",
+                position: "relative",
+                zIndex: 1,
+                "&::after": {
+                  content: '""',
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  width: "80%",
+                  height: "80%",
+                  transform: "translate(-50%, -50%)",
+                  border: "1px solid #3f51b5",
+                  borderRadius: "50%",
+                  zIndex: 0,
+                },
+              },
+              ...(startDate &&
+                day.isSame(startDate, "day") && {
+                  backgroundColor: "#3f51b5",
+                  color: "#fff",
+                }),
+              ...(endDate &&
+                day.isSame(endDate, "day") && {
+                  backgroundColor: "#3f51b5",
+                  color: "#fff",
+                }),
+              ...(day.isSame(today, "day") && {
+                border: "1px solid #3f51b5",
+                borderRadius: "50%",
+                zIndex: 1,
+              }),
+              m: 0,
+            }}
+          />
+        );
+      })}
     </Box>
   );
 };
