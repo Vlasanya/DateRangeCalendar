@@ -1,7 +1,6 @@
-import * as React from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { Box, Typography } from "@mui/material";
-import moment, { Moment } from "moment";
-import PickersRangeCalendarHeader from "./pickersRangeCalendarHeader";
+import { Moment } from "moment";
 import DayCalendarForRange from "./DayCalendarForRange";
 import ArrowRightAltIcon from "@mui/icons-material/ArrowRightAlt";
 
@@ -28,7 +27,9 @@ const CustomDateRangeCalendar: React.FC<CustomDateRangeCalendarProps> = ({
   currentMonths,
   onMonthChange,
 }) => {
-  const selectedDaysCount = React.useMemo(() => {
+  const [hoveredDay, setHoveredDay] = useState<Moment | null>(null);
+
+  const selectedDaysCount = useMemo(() => {
     const [start, end] = value;
     if (start && end) {
       return end.diff(start, "days") + 1;
@@ -36,7 +37,7 @@ const CustomDateRangeCalendar: React.FC<CustomDateRangeCalendarProps> = ({
     return 0;
   }, [value]);
 
-  const handleDaySelect = React.useCallback(
+  const handleDaySelect = useCallback(
     (selectedDay: Moment) => {
       const [start, end] = value;
       if (!start || (start && end)) {
@@ -50,30 +51,27 @@ const CustomDateRangeCalendar: React.FC<CustomDateRangeCalendarProps> = ({
     [value, onChange]
   );
 
-  const renderCalendars = () => {
-    const today = moment().startOf("month");
+  const handleDayHover = useCallback((day: Moment) => {
+    setHoveredDay(day);
+  }, []);
 
+  const handleDayMouseLeave = useCallback(() => {
+    setHoveredDay(null);
+  }, []);
+
+  const renderCalendars = () => {
     return currentMonths.map((month, i) => (
       <Box key={i} mx={1}>
-        <PickersRangeCalendarHeader
-          month={month}
-          onMonthChange={(newMonth) => onMonthChange(i, newMonth)}
-          isNextMonthDisabled={
-            disableFuture && month.isSameOrAfter(today, "month")
-          }
-          isPreviousMonthDisabled={
-            disablePast && month.isSameOrBefore(today, "month")
-          }
-          selectedDate={value[i]}
-          label={i === 0 ? "Start Date" : "End Date"}
-        />
         <DayCalendarForRange
           currentMonth={month}
           value={value}
           onDaySelect={handleDaySelect}
+          onDayHover={handleDayHover}
+          onDayMouseLeave={handleDayMouseLeave}
           maxDate={maxDate}
           disableFuture={disableFuture}
           disablePast={disablePast}
+          hoveredDay={hoveredDay}
         />
       </Box>
     ));
@@ -86,12 +84,12 @@ const CustomDateRangeCalendar: React.FC<CustomDateRangeCalendarProps> = ({
         p={1}
         border={"none"}
         textAlign="center"
-        sx={{ position: "absolute", top: 30, m: 0, opacity: 0.5 }}
+        sx={{ position: "absolute", top: 50, m: 0, opacity: 0.5, lineHeight: 0 }}
       >
         <ArrowRightAltIcon />
         {selectedDaysCount > 0 && (
-          <Typography variant="subtitle1" ml={1}>
-            {selectedDaysCount} days
+          <Typography variant="subtitle1" ml={1} data-testid="selectedDaysCount">
+            {selectedDaysCount} {selectedDaysCount === 1 ? "day" : "days"}
           </Typography>
         )}
       </Box>

@@ -1,4 +1,12 @@
-import React, { useState, useCallback, useEffect, useRef, useImperativeHandle, forwardRef, useMemo } from "react";
+import React, {
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  useImperativeHandle,
+  forwardRef,
+  useMemo,
+} from "react";
 import {
   Box,
   Button,
@@ -29,173 +37,208 @@ interface DateRangeInputProps {
   dateFormat?: string;
 }
 
-const DateRangeInput = forwardRef<unknown, DateRangeInputProps>(({
-  value,
-  onChange,
-  defaultValue = [null, null],
-  showPresetSelect,
-  disableFuture = false,
-  disablePast = false,
-  shortcutsItems = [],
-  dateFormat = "MM/DD/YYYY",
-}, ref) => {
-  const theme = useTheme();
-  const defaultRef = useRef(defaultValue);
-  const [selectedDates, setSelectedDates] = useState<[Moment | null, Moment | null]>(
-    defaultRef.current
-  );
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [tempSelectedDates, setTempSelectedDates] = useState<[Moment | null, Moment | null]>(
-    defaultRef.current
-  );
+export interface DateRangeInputHandle {
+  getSelectedDates: () => [Moment | null, Moment | null];
+}
 
-  const initialCalendarMonths = useMemo<[Moment, Moment]>(() => {
-    const today = moment();
-    if (disableFuture) {
-      return [today.clone().subtract(1, 'month'), today];
-    }
-    return [today, today.clone().add(1, 'month')];
-  }, [disableFuture]);
+const DateRangeInput = forwardRef<DateRangeInputHandle, DateRangeInputProps>(
+  (
+    {
+      value,
+      onChange,
+      defaultValue = [null, null],
+      showPresetSelect,
+      disableFuture = false,
+      disablePast = false,
+      shortcutsItems = [],
+      dateFormat = "MM/DD/YYYY",
+    },
+    ref
+  ) => {
+    const theme = useTheme();
+    const defaultRef = useRef(defaultValue);
+    const [selectedDates, setSelectedDates] = useState<
+      [Moment | null, Moment | null]
+    >(defaultRef.current);
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const [tempSelectedDates, setTempSelectedDates] = useState<
+      [Moment | null, Moment | null]
+    >(defaultRef.current);
 
-  const [currentMonths, setCurrentMonths] = useState<[Moment, Moment]>(initialCalendarMonths);
+    const initialCalendarMonths = useMemo<[Moment, Moment]>(() => {
+      const today = moment();
+      if (disableFuture) {
+        return [today.clone().subtract(1, "month"), today];
+      }
+      return [today, today.clone().add(1, "month")];
+    }, [disableFuture]);
 
-  useEffect(() => {
-    if (value) {
-      setSelectedDates(value);
-    }
-  }, [value]);
+    const [currentMonths, setCurrentMonths] = useState<[Moment, Moment]>(
+      initialCalendarMonths
+    );
 
-  const handleOpen = useCallback((event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-    setTempSelectedDates(value || selectedDates);
-  }, [value, selectedDates]);
+    useEffect(() => {
+      if (value) {
+        setSelectedDates(value);
+      }
+    }, [value]);
 
-  const handleClose = useCallback(() => {
-    setAnchorEl(null);
-  }, []);
+    const handleOpen = useCallback(
+      (event: React.MouseEvent<HTMLElement>) => {
+        setAnchorEl(event.currentTarget);
+        setTempSelectedDates(value || selectedDates);
+      },
+      [value, selectedDates]
+    );
 
-  const handleApply = useCallback(() => {
-    if (onChange) {
-      onChange(tempSelectedDates);
-    } else {
-      setSelectedDates(tempSelectedDates);
-    }
-    setAnchorEl(null);
-  }, [onChange, tempSelectedDates]);
+    const handleClose = useCallback(() => {
+      setAnchorEl(null);
+    }, []);
 
-  const handleCancel = useCallback(() => {
-    setTempSelectedDates([null, null]);
-    setSelectedDates([null, null]);
-    setAnchorEl(null);
-  }, []);
+    const handleApply = useCallback(() => {
+      if (onChange) {
+        onChange(tempSelectedDates);
+      } else {
+        setSelectedDates(tempSelectedDates);
+      }
+      setAnchorEl(null);
+    }, [onChange, tempSelectedDates]);
 
-  const handleDateChange = useCallback((newRange: [Moment | null, Moment | null]) => {
-    setTempSelectedDates(newRange);
-  }, []);
+    const handleCancel = useCallback(() => {
+      setTempSelectedDates([null, null]);
+      setSelectedDates([null, null]);
+      setAnchorEl(null);
+    }, []);
 
-  const handleShortcutSelect = useCallback((preset: [Moment | null, Moment | null]) => {
-    setTempSelectedDates(preset);
-  }, []);
+    const handleDateChange = useCallback(
+      (newRange: [Moment | null, Moment | null]) => {
+        setTempSelectedDates(newRange);
+      },
+      []
+    );
 
-  const handleMonthChange = useCallback((index: number, newMonth: Moment) => {
-    setCurrentMonths((prevMonths) => {
-      const updatedMonths: [Moment, Moment] = [...prevMonths] as [Moment, Moment];
-      updatedMonths[index] = newMonth;
-      return updatedMonths;
-    });
-  }, []);
+    const handleShortcutSelect = useCallback(
+      (preset: [Moment | null, Moment | null], newMonths: [Moment, Moment]) => {
+        setTempSelectedDates(preset);
+        setCurrentMonths(newMonths);
+        setSelectedDates(preset);
+      },
+      []
+    );
 
-  const isApplyDisabled = !(tempSelectedDates[0] && tempSelectedDates[1]);
+    const handleMonthChange = useCallback((index: number, newMonth: Moment) => {
+      setCurrentMonths((prevMonths) => {
+        const updatedMonths: [Moment, Moment] = [...prevMonths] as [
+          Moment,
+          Moment
+        ];
+        updatedMonths[index] = newMonth;
+        return updatedMonths;
+      });
+    }, []);
 
-  useImperativeHandle(ref, () => ({
-    getSelectedDates: () => selectedDates,
-  }));
+    const isApplyDisabled = !(tempSelectedDates[0] && tempSelectedDates[1]);
 
-  const formattedDateRange = useMemo(() => {
-    return selectedDates[0] && selectedDates[1]
-      ? `${selectedDates[0]?.format(dateFormat)} - ${selectedDates[1]?.format(dateFormat)}`
-      : "";
-  }, [selectedDates, dateFormat]);
+    useImperativeHandle(
+      ref,
+      () => ({
+        getSelectedDates: () => selectedDates,
+      }),
+      [selectedDates]
+    );
 
-  return (
-    <Box>
-      <TextField
-        value={formattedDateRange}
-        onClick={handleOpen}
-        slotProps={{
-          input: {
+    const formattedDateRange = useMemo(() => {
+      return selectedDates[0] && selectedDates[1]
+        ? `${selectedDates[0]?.format(dateFormat)} - ${selectedDates[1]?.format(
+            dateFormat
+          )}`
+        : "";
+    }, [selectedDates, dateFormat]);
+
+    return (
+      <Box>
+        <TextField
+          value={formattedDateRange}
+          onClick={handleOpen}
+          InputProps={{
             readOnly: true,
+            endAdornment: <CalendarTodayOutlinedIcon />,
             classes: {
               notchedOutline: "notchedOutline",
             },
-            endAdornment: <CalendarTodayOutlinedIcon />,
-          },
-        }}
-        sx={{
-          minWidth: 300,
-          "& .MuiOutlinedInput-notchedOutline": {
-            border: "none",
-          },
-          "&:hover .MuiOutlinedInput-notchedOutline": {
-            border: "none",
-          },
-          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-            border: "none",
-          },
-          borderBottom: `1px solid ${theme.palette.divider}`,
-          borderRadius: 0,
-        }}
-      />
+          }}
+          sx={{
+            minWidth: 300,
+            "& .MuiOutlinedInput-notchedOutline": {
+              border: "none",
+            },
+            "&:hover .MuiOutlinedInput-notchedOutline": {
+              border: "none",
+            },
+            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+              border: "none",
+            },
+            borderBottom: `1px solid ${theme.palette.divider}`,
+            borderRadius: 0,
+          }}
+        />
 
-      <Popover
-        open={Boolean(anchorEl)}
-        anchorEl={anchorEl}
-        onClose={handleClose}
-        anchorOrigin={{
-          vertical: "bottom",
-          horizontal: "left",
-        }}
-      >
-        <DialogContent>
-          <Box display="flex">
-            <CustomDateRangeCalendar
-              value={tempSelectedDates}
-              onChange={handleDateChange}
-              calendars={2}
-              minDate={moment().subtract(1, "year")}
-              maxDate={moment().add(1, "year")}
-              disableFuture={disableFuture}
-              disablePast={disablePast}
-              currentMonths={currentMonths}
-              onMonthChange={handleMonthChange}
-            />
-
-            {showPresetSelect && (
-              <ShortcutsItemsSelect
-                onPresetSelect={handleShortcutSelect}
-                shortcutsItems={shortcutsItems}
+        <Popover
+          open={Boolean(anchorEl)}
+          anchorEl={anchorEl}
+          onClose={handleClose}
+          anchorOrigin={{
+            vertical: "bottom",
+            horizontal: "left",
+          }}
+          sx={{
+            "& .MuiPaper-root": {
+              backgroundColor: "background.default",
+            },
+          }}
+        >
+          <DialogContent>
+            <Box display="flex">
+              <CustomDateRangeCalendar
+                value={tempSelectedDates}
+                onChange={handleDateChange}
+                calendars={2}
+                minDate={moment().subtract(1, "year")}
+                maxDate={moment().add(1, "year")}
                 disableFuture={disableFuture}
                 disablePast={disablePast}
+                currentMonths={currentMonths}
+                onMonthChange={handleMonthChange}
               />
-            )}
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCancel} color="secondary">
-            Cancel
-          </Button>
-          <Button
-            onClick={handleApply}
-            color="primary"
-            variant="contained"
-            disabled={isApplyDisabled}
-          >
-            Apply
-          </Button>
-        </DialogActions>
-      </Popover>
-    </Box>
-  );
-});
+
+              {showPresetSelect && (
+                <ShortcutsItemsSelect
+                  onPresetSelect={handleShortcutSelect}
+                  shortcutsItems={shortcutsItems}
+                  disableFuture={disableFuture}
+                  disablePast={disablePast}
+                  selectedDates={tempSelectedDates}
+                />
+              )}
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCancel} color="secondary">
+              Cancel
+            </Button>
+            <Button
+              onClick={handleApply}
+              color="primary"
+              variant="contained"
+              disabled={isApplyDisabled}
+            >
+              Apply
+            </Button>
+          </DialogActions>
+        </Popover>
+      </Box>
+    );
+  }
+);
 
 export default React.memo(DateRangeInput);

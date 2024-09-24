@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterMoment } from "@mui/x-date-pickers/AdapterMoment";
-import DateRangeInput from "./components/dateRangeInput";
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
+import DateRangeInput, { DateRangeInputHandle } from "./components/dateRangeInput";
 import { Typography, Button } from "@mui/material";
 import moment, { Moment } from "moment";
 
@@ -11,9 +11,7 @@ const App: React.FC = React.memo(() => {
     moment().add(7, "days"),
   ]);
 
-  const dateRangeRef = useRef<{
-    getSelectedDates: () => [Moment | null, Moment | null];
-  } | null>(null);
+  const dateRangeRef = useRef<DateRangeInputHandle>(null);
 
   const handleGetSelectedDates = () => {
     if (dateRangeRef.current) {
@@ -25,6 +23,7 @@ const App: React.FC = React.memo(() => {
   const shortcutItems = [
     {
       label: "Today",
+      id: "today",
       getValue: (): [Moment | null, Moment | null] => {
         const today = moment();
         return [today, today];
@@ -32,6 +31,7 @@ const App: React.FC = React.memo(() => {
     },
     {
       label: "One Day",
+      id: "oneDay",
       getValue: (): [Moment | null, Moment | null] => {
         const today = moment();
         return [today, today.clone().add(1, "day")];
@@ -39,6 +39,7 @@ const App: React.FC = React.memo(() => {
     },
     {
       label: "One Week",
+      id: "oneWeek",
       getValue: (): [Moment | null, Moment | null] => {
         const today = moment();
         return [today, today.clone().add(7, "days")];
@@ -46,6 +47,7 @@ const App: React.FC = React.memo(() => {
     },
     {
       label: "One Month",
+      id: "oneMonth",
       getValue: (): [Moment | null, Moment | null] => {
         const today = moment();
         return [today, today.clone().add(1, "month")];
@@ -53,6 +55,7 @@ const App: React.FC = React.memo(() => {
     },
     {
       label: "One Year",
+      id: "oneYear",
       getValue: (): [Moment | null, Moment | null] => {
         const today = moment();
         return [today, today.clone().add(1, "year")];
@@ -60,17 +63,31 @@ const App: React.FC = React.memo(() => {
     },
     {
       label: "Current Month",
+      id: "currentMonth",
       getValue: (): [Moment | null, Moment | null] => {
         const today = moment();
-        return [today.startOf("month"), today.endOf("month")];
+        const startOfMonth = today.clone().startOf('month');
+        const endOfMonth = today.clone().endOf('month'); 
+        return [startOfMonth, endOfMonth];
       },
     },
+    {
+      label: "Current Week",
+      id: "currentWeek",
+      getValue: (): [Moment | null, Moment | null] => {
+        const today = moment();
+        const startOfWeek = today.clone().startOf('week');
+        const endOfWeek = today.clone().endOf('week');
+        return [startOfWeek, endOfWeek];
+      },
+    }
+    
   ];
 
   return (
     <LocalizationProvider dateAdapter={AdapterMoment}>
       <div>
-        <Typography>Date Range Picker uncontrolled</Typography>
+        <Typography>Date Range Picker date format</Typography>
         <DateRangeInput dateFormat="DD MMM YYYY" />
 
         <Typography>Date Range Picker Controlled</Typography>

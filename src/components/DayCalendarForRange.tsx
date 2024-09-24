@@ -1,124 +1,119 @@
-import * as React from "react";
-import { Box } from "@mui/material";
-import { PickersDay, PickersDayProps } from "@mui/x-date-pickers";
+import React from "react";
 import moment, { Moment } from "moment";
+import { DateCalendar, PickersDay } from "@mui/x-date-pickers";
+import { useTheme } from "@mui/material";
 
 interface DayCalendarForRangeProps {
   currentMonth: Moment;
   value: [Moment | null, Moment | null];
   onDaySelect: (day: Moment) => void;
+  onDayHover: (day: Moment) => void;
+  onDayMouseLeave: () => void;
   maxDate: Moment;
   disableFuture?: boolean;
   disablePast?: boolean;
+  hoveredDay: Moment | null;
 }
 
 const DayCalendarForRange: React.FC<DayCalendarForRangeProps> = ({
   currentMonth,
   value,
   onDaySelect,
+  onDayHover,
+  onDayMouseLeave,
   maxDate,
   disableFuture = false,
   disablePast = false,
+  hoveredDay,
 }) => {
+  const theme = useTheme();
+  const today = moment();
   const startDate = value[0];
   const endDate = value[1];
-  const today = moment();
-
-  const firstDayOfMonth = currentMonth.clone().startOf("month");
-  const firstDayWeekday = (firstDayOfMonth.day() + 6) % 7;
-
-  const daysInMonth = currentMonth.daysInMonth();
-
-  const daysArray: Moment[] = [];
-  for (let i = 0; i < firstDayWeekday; i++) {
-    daysArray.push(
-      firstDayOfMonth.clone().subtract(firstDayWeekday - i, "day")
-    );
-  }
-  for (let i = 1; i <= daysInMonth; i++) {
-    daysArray.push(currentMonth.clone().date(i));
-  }
 
   return (
-    <Box display="grid" gridTemplateColumns="repeat(7, 1fr)">
-      {daysArray.map((day) => {
-        const isBetween =
-          startDate && endDate && day.isBetween(startDate, endDate, "day");
-        const isToday = day.isSame(today, "day");
-        const className = `${isBetween ? "day-between" : ""} ${
-          isToday ? "today-day" : ""
-        }`.trim();
+    <DateCalendar
+      value={currentMonth}
+      onChange={(newDate) => onDaySelect(newDate as Moment)}
+      showDaysOutsideCurrentMonth={false}
+      data-testid="day-calendar"
+      sx={{
+        "& .MuiDayCalendar-weekDayLabel": {
+          color: "primary.main",
+        },
+        "& .MuiPickersCalendarHeader-root": {
+          marginBottom: "3rem",
+        },
+      }}
+      slots={{
+        day: (dayProps) => {
+          const day = dayProps.day as Moment;
+          const isStartDate = value[0] && day.isSame(value[0], "day");
+          const isEndDate = value[1] && day.isSame(value[1], "day");
+          const isSelected = !!(isStartDate || isEndDate);
+          const isToday = day.isSame(today, "day");
+          const isBetween =
+            startDate &&
+            endDate &&
+            day.isBetween(startDate, endDate, null, "[]");
+          const isHovered =
+            hoveredDay && day.isBetween(startDate, hoveredDay, "day", "[]");
 
-        return (
-          <PickersDay
-            key={day.toString()}
-            day={day}
-            outsideCurrentMonth={day.month() !== currentMonth.month()}
-            isFirstVisibleCell={false}
-            isLastVisibleCell={false}
-            disabled={
-              (disableFuture && day.isAfter(today, "day")) ||
-              (disablePast && day.isBefore(today, "day")) ||
-              day.isAfter(maxDate, "day")
-            }
-            selected={
-              !!(startDate && day.isSame(startDate, "day")) ||
-              !!(endDate && day.isSame(endDate, "day")) ||
-              false
-            }
-            onDaySelect={() =>
-              !day.isAfter(maxDate, "day") &&
-              !(disableFuture && day.isAfter(today, "day")) &&
-              !(disablePast && day.isBefore(today, "day")) &&
-              onDaySelect(day)
-            }
-            className={className || undefined}
-            sx={{
-              "&.day-between": {
-                backgroundColor: "#dfe0e7",
-                color: "#000",
-                borderRadius: 0,
-                width: "100%",
-                position: "relative",
-              },
-              "&.today-day": {
-                border: "none",
-                position: "relative",
-                zIndex: 1,
-                "&::after": {
-                  content: '""',
-                  position: "absolute",
-                  top: "50%",
-                  left: "50%",
-                  width: "80%",
-                  height: "80%",
-                  transform: "translate(-50%, -50%)",
-                  border: "1px solid #3f51b5",
-                  borderRadius: "50%",
-                  zIndex: 0,
-                },
-              },
-              ...(startDate &&
-                day.isSame(startDate, "day") && {
-                  backgroundColor: "#3f51b5",
-                  color: "#fff",
+          return (
+            <PickersDay
+              {...dayProps}
+              onMouseEnter={() => onDayHover(day)}
+              onMouseLeave={onDayMouseLeave}
+              selected={isSelected}
+              data-testid={
+                isSelected
+                  ? "selected-day"
+                  : isToday
+                  ? "today-day"
+                  : "day-button"
+              }
+              className={`custom-pickers-day ${isToday ? "today-day" : ""}`}
+              sx={{
+                ...(isHovered && {
+                  borderTop: `1px dashed ${theme.palette.primary.main}  !important`,
+                  borderBottom: `1px dashed ${theme.palette.primary.main}  !important`,
+                  borderRadius: "50% !important",
                 }),
-              ...(endDate &&
-                day.isSame(endDate, "day") && {
-                  backgroundColor: "#3f51b5",
-                  color: "#fff",
+                ...(isToday && {
+                  border: `1px solid ${theme.palette.primary.main}  !important`,
+                  borderRadius: "50% !important",
                 }),
-              ...(day.isSame(today, "day") && {
-                border: "1px solid #3f51b5",
-                borderRadius: "50%",
-                zIndex: 1,
-              }),
-              m: 0,
-            }}
-          />
-        );
-      })}
-    </Box>
+                ...(isStartDate && {
+                  backgroundColor: "primary.main",
+                  color: "text.secondary",
+                }),
+                ...(isEndDate && {
+                  backgroundColor: "primary.main",
+                  color: "text.secondary",
+                }),
+                ...(isBetween && {
+                  backgroundColor: "background.paper",
+                  color: "text.primary",
+                }),
+              }}
+            />
+          );
+        },
+      }}
+      slotProps={{
+        calendarHeader: {
+          sx: {
+            "& .MuiPickersCalendarHeader-label": {
+              fontSize: "1.2rem",
+              textAlign: "center",
+            },
+          },
+        },
+      }}
+      maxDate={maxDate}
+      disableFuture={disableFuture}
+      disablePast={disablePast}
+    />
   );
 };
 

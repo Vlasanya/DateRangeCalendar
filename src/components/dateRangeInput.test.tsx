@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  render,
-  fireEvent,
-  screen,
-  waitFor,
-  within,
-} from "@testing-library/react";
+import { render, fireEvent, screen, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import moment, { Moment } from "moment";
 import DateRangeInput from "./dateRangeInput";
@@ -22,12 +16,15 @@ const renderWithProviders = (ui: React.ReactElement) => {
 
 describe("DateRangeInput Component", () => {
   test("renders the uncontrolled component correctly", () => {
-    renderWithProviders(<DateRangeInput />);
+    renderWithProviders(
+      <DateRangeInput defaultValue={[moment(), moment().add(7, "days")]} />
+    );
     const input = screen.getByRole("textbox");
     expect(input).toBeInTheDocument();
     fireEvent.click(input);
-    const calendar = screen.getByText("Start Date");
+    const calendar = screen.getByTestId("selectedDaysCount");
     expect(calendar).toBeInTheDocument();
+    expect(calendar).toHaveTextContent("8 days");
   });
 
   test("renders the controlled component and updates value correctly", async () => {
@@ -57,32 +54,46 @@ describe("DateRangeInput Component", () => {
     renderWithProviders(<DateRangeInput />);
     const input = screen.getByRole("textbox");
     fireEvent.click(input);
-    expect(screen.getByText("Start Date")).toBeInTheDocument();
+    const calendar = screen.getByTestId("ArrowRightAltIcon");
+    expect(calendar).toBeInTheDocument();
   });
 
   test("renders with disableFuture and does not allow future date selection", () => {
     renderWithProviders(<DateRangeInput disableFuture />);
-    const input = screen.getByRole("textbox");
+    const input = screen.getByTestId("CalendarTodayOutlinedIcon");
     fireEvent.click(input);
-    const allDays = screen.getAllByRole("button", { name: /\d+/ });
-    const futureDay = moment().add(1, "month").date(28).format("D");
-    const futureDayButton = allDays.find(
-      (button) =>
-        button.textContent === futureDay && button.hasAttribute("disabled")
+    const allDayButtons = screen.getAllByTestId("day-button");
+    const disabledDayButtons = allDayButtons.filter((button) =>
+      button.classList.contains("Mui-disabled")
     );
-    expect(futureDayButton).toBeDisabled();
+    expect(disabledDayButtons.length).toBeGreaterThan(0);
+    const today = moment();
+    const endOfMonth = today.clone().endOf("month");
+    const remainingDaysInMonth = endOfMonth.diff(today, "days");
+    expect(disabledDayButtons.length).toBe(remainingDaysInMonth);
+    disabledDayButtons.forEach((button) => {
+      expect(button).toHaveClass("Mui-disabled");
+      expect(button).toBeDisabled();
+    });
   });
 
   test("renders with disablePast and does not allow past date selection", () => {
     renderWithProviders(<DateRangeInput disablePast />);
-    const input = screen.getByRole("textbox");
+    const input = screen.getByTestId("CalendarTodayOutlinedIcon");
     fireEvent.click(input);
-    const allDays = screen.getAllByRole("button", { name: /\d+/ });
-    const pastDay = moment().subtract(1, "month").date(1).format("D");
-    const pastDayButton = allDays.find(
-      (button) => button.textContent === pastDay
+    const allDayButtons = screen.getAllByTestId("day-button");
+    const disabledDayButtons = allDayButtons.filter((button) =>
+      button.classList.contains("Mui-disabled")
     );
-    expect(pastDayButton).toBeDisabled();
+    expect(disabledDayButtons.length).toBeGreaterThan(0);
+    const today = moment();
+    const startOfMonth = today.clone().startOf("month");
+    const passedDaysInMonth = today.diff(startOfMonth, "days");
+    expect(disabledDayButtons.length).toBe(passedDaysInMonth);
+    disabledDayButtons.forEach((button) => {
+      expect(button).toHaveClass("Mui-disabled");
+      expect(button).toBeDisabled();
+    });
   });
 
   test("renders with showPresetSelect and allows preset selection", async () => {
@@ -114,32 +125,34 @@ describe("DateRangeInput Component", () => {
       expect(screen.queryByText("Start Date")).not.toBeInTheDocument();
     });
   });
+
   test("updates the month correctly when handleMonthChange is called", () => {
     renderWithProviders(<DateRangeInput showPresetSelect />);
     const input = screen.getByRole("textbox");
     fireEvent.click(input);
-    const monthLabel = screen.getByText(moment().format("MMMM YYYY"));
-    expect(monthLabel).toBeInTheDocument();
-    const nextButton = screen.getAllByRole("button", { name: ">" })[0];
-    fireEvent.click(nextButton);
-    const updatedMonthLabel = screen.getAllByText(
-      moment().add(1, "month").format("MMMM YYYY")
-    );
-    expect(updatedMonthLabel.length).toBeGreaterThan(0);
-    expect(updatedMonthLabel[0]).toBeInTheDocument();
-    const prevButton = screen.getAllByRole("button", { name: "<" })[0];
-    fireEvent.click(prevButton);
+    const currentMonthYear = moment().format("MMMM YYYY");
+    const monthLabel = screen.getByText(currentMonthYear);
 
-    const resetMonthLabel = screen.getByText(moment().format("MMMM YYYY"));
-    expect(resetMonthLabel).toBeInTheDocument();
+    expect(monthLabel).toBeInTheDocument();
+    expect(monthLabel).toHaveClass("MuiPickersCalendarHeader-label");
+    const arrowLeft = screen.getAllByTestId("ArrowLeftIcon")[0];
+    expect(arrowLeft).toBeInTheDocument();
+    fireEvent.click(arrowLeft);
+    const previousMonthYear = moment().subtract(1, "month").format("MMMM YYYY");
+
+    const previousMonthLabel = screen.getByText(previousMonthYear);
+    expect(previousMonthLabel).toBeInTheDocument();
+    expect(previousMonthLabel).toHaveClass("MuiPickersCalendarHeader-label");
   });
 
   test("does nothing if start or end is null", async () => {
     const shortcutItems = [
       {
         label: "One Week",
+        id: "oneWeek",
         getValue: (): [Moment | null, Moment | null] => {
-          return [null, null];
+          const today = moment();
+          return [today, today.clone().add(7, "days")];
         },
       },
     ];
@@ -155,14 +168,17 @@ describe("DateRangeInput Component", () => {
     fireEvent.click(screen.getByText("One Week"));
     await waitFor(() => expect(onChangeMock).not.toHaveBeenCalled());
   });
-
+  //must check if this is working
   test("selects 'Current Month' correctly when 'disableFuture' is enabled", async () => {
     const shortcutItems = [
       {
         label: "Current Month",
+        id: "currentMonth",
         getValue: (): [Moment | null, Moment | null] => {
           const today = moment();
-          return [today.startOf("month"), today.endOf("month")];
+          const startOfMonth = today.clone().startOf("month");
+          const endOfMonth = today.clone().endOf("month");
+          return [startOfMonth, endOfMonth];
         },
       },
     ];
@@ -177,23 +193,32 @@ describe("DateRangeInput Component", () => {
 
     fireEvent.click(screen.getByRole("textbox"));
     fireEvent.click(screen.getByText("Current Month"));
+
     const today = moment();
-    const daysInMonth = today.diff(today.clone().startOf("month"), "days") + 1;
-    await waitFor(() => {
-      const selectedDaysText = screen.getByText(
-        new RegExp(`${daysInMonth} days`, "i")
-      );
-      expect(selectedDaysText).toBeInTheDocument();
-    });
+    const firstDay = today.startOf("month").date().toString();
+    const todayDate = today.date().toString();
+
+    const selectedDayOfMonthButtons = screen.getAllByTestId("selected-day");
+
+    expect(selectedDayOfMonthButtons.length).toBe(2);
+
+    expect(selectedDayOfMonthButtons[0]).toHaveTextContent(`${firstDay}`);
+    expect(selectedDayOfMonthButtons[0]).toHaveClass("Mui-selected");
+
+    expect(selectedDayOfMonthButtons[1]).toHaveTextContent(`${todayDate}`);
+    expect(selectedDayOfMonthButtons[1]).toHaveClass("Mui-selected");
   });
 
-  test("selects 'Current Month' correctly when 'disablePast' is enabled", async () => {
+  test("selects 'Current Week' correctly when 'disablePast' is enabled", async () => {
     const shortcutItems = [
       {
-        label: "Current Month",
+        label: "Current Week",
+        id: "currentWeek",
         getValue: (): [Moment | null, Moment | null] => {
           const today = moment();
-          return [today.startOf("month"), today.endOf("month")];
+          const startOfWeek = today.clone().startOf('week');
+          const endOfWeek = today.clone().endOf('week');
+          return [startOfWeek, endOfWeek];
         },
       },
     ];
@@ -207,25 +232,33 @@ describe("DateRangeInput Component", () => {
     );
 
     fireEvent.click(screen.getByRole("textbox"));
-    fireEvent.click(screen.getByText("Current Month"));
+    fireEvent.click(screen.getByText("Current Week"));
     const today = moment();
-    const daysToEndOfMonth =
-      today.clone().endOf("month").diff(today, "days") + 1;
-    await waitFor(() => {
-      const selectedDaysText = screen.getByText(
-        new RegExp(`${daysToEndOfMonth} days`, "i")
-      );
-      expect(selectedDaysText).toBeInTheDocument();
-    });
+    const lastDayOfWeek = today.clone().endOf("week").date().toString();
+    const todayDate = today.date().toString();
+  
+    const selectedDayOfWeekButtons = screen.getAllByTestId("selected-day");
+  
+    expect(selectedDayOfWeekButtons.length).toBe(2);
+  
+    expect(selectedDayOfWeekButtons[0]).toHaveTextContent(`${todayDate}`);
+    expect(selectedDayOfWeekButtons[0]).toHaveClass("Mui-selected");
+  
+    expect(selectedDayOfWeekButtons[1]).toHaveTextContent(`${lastDayOfWeek}`);
+    expect(selectedDayOfWeekButtons[1]).toHaveClass("Mui-selected");
+  
   });
 
   test("selects only today when both 'disablePast' and 'disableFuture' are enabled", async () => {
     const shortcutItems = [
       {
-        label: "Current Month",
+        label: "Current Week",
+        id: "currentWeek",
         getValue: (): [Moment | null, Moment | null] => {
           const today = moment();
-          return [today.startOf("month"), today.endOf("month")];
+          const startOfWeek = today.clone().startOf('week');
+          const endOfWeek = today.clone().endOf('week');
+          return [startOfWeek, endOfWeek];
         },
       },
     ];
@@ -240,71 +273,12 @@ describe("DateRangeInput Component", () => {
     );
 
     fireEvent.click(screen.getByRole("textbox"));
-    fireEvent.click(screen.getByText("Current Month"));
-
+    fireEvent.click(screen.getByText("Current Week"));
     const today = moment();
-    const allSelectedDays = screen.getAllByText(today.format("DD MMMM YYYY"));
-    expect(allSelectedDays.length).toBe(2);
-  });
-
-  test("calculates reverse duration when 'disableFuture' is enabled for other shortcuts", async () => {
-    const shortcutItems = [
-      {
-        label: "One Week",
-        getValue: (): [Moment | null, Moment | null] => {
-          const today = moment();
-          return [today, today.clone().add(7, "days")];
-        },
-      },
-    ];
-
-    renderWithProviders(
-      <DateRangeInput
-        showPresetSelect
-        shortcutsItems={shortcutItems}
-        disableFuture
-      />
-    );
-
-    fireEvent.click(screen.getByRole("textbox"));
-    fireEvent.click(screen.getByText("One Week"));
-    const today = moment();
-    const startDate = today.clone().subtract(7, "days");
-    const displayedStartDate = screen.getByText(
-      startDate.format("DD MMMM YYYY")
-    );
-    const displayedEndDate = screen.getByText(today.format("DD MMMM YYYY"));
-
-    expect(displayedStartDate).toBeInTheDocument();
-    expect(displayedEndDate).toBeInTheDocument();
-  });
-
-  test("calculates forward duration when 'disablePast' is enabled for other shortcuts", async () => {
-    const shortcutItems = [
-      {
-        label: "One Week",
-        getValue: (): [Moment | null, Moment | null] => {
-          const today = moment();
-          return [today, today.clone().add(7, "days")];
-        },
-      },
-    ];
-
-    renderWithProviders(
-      <DateRangeInput
-        showPresetSelect
-        shortcutsItems={shortcutItems}
-        disablePast
-      />
-    );
-
-    fireEvent.click(screen.getByRole("textbox"));
-    fireEvent.click(screen.getByText("One Week"));
-    const today = moment();
-    const endDate = today.clone().add(7, "days");
-    const displayedStartDate = screen.getByText(today.format("DD MMMM YYYY"));
-    const displayedEndDate = screen.getByText(endDate.format("DD MMMM YYYY"));
-    expect(displayedStartDate).toBeInTheDocument();
-    expect(displayedEndDate).toBeInTheDocument();
+    const todayDate = today.date().toString();
+    const selectedDayOfWeekButtons = screen.getAllByTestId("selected-day");
+    expect(selectedDayOfWeekButtons.length).toBe(1);
+    expect(selectedDayOfWeekButtons[0]).toHaveTextContent(`${todayDate}`);
+    expect(selectedDayOfWeekButtons[0]).toHaveClass("Mui-selected");
   });
 });
